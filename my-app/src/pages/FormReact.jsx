@@ -3,13 +3,16 @@ import "../App.css"
 function FormReact() {
 
 const [email,setEmail] = useState(" ")
+const [password,setPassword] = useState(" ")
+const [gender,setGender] = useState("male")
+const [checkBox,setCheckBox] = useState(false)
 
   const handleForm = (e)=>{
-    e.preventDefault()
+    e.preventDefault() 
   }
 
 const submitForm = ()=>{
-  console.log(email)
+  console.log(email,password,gender,checkBox)
 }
 
   return (
@@ -17,15 +20,15 @@ const submitForm = ()=>{
       <h1 >hello from FormReact</h1>
    
       <form onSubmit={(e)=> handleForm(e)} >
-        <label htmlFor="email">UserName</label>
+        <label htmlFor="email" className='input1'>UserName</label>
         <br />
         <input type="text"  id="email" onChange={(e)=>setEmail(e.target.value)}  placeholder='email' />
         <br />
           <label htmlFor="">Password</label>
         <br />
-        <input type="password"  id="" placeholder='password' />
+        <input type="password" onChange={(e)=>setPassword(e.target.value)}  id="" placeholder='password' />
         <br />
-        <select >
+        <select onChange={(e)=> setGender(e.target.value)} >
             <option value="">Select Your Gender</option>
             <option value="male">Male</option>
             <option value="female">Female</option>
@@ -33,7 +36,7 @@ const submitForm = ()=>{
         </select>
         <br />
       
-        <input type="checkbox" id='' />
+        <input type="checkbox" id='' onChange={(e)=> setCheckBox(e.target.checked)} />
           <label htmlFor="">Agree Your T&c</label>
           <br />
           <button onClick={submitForm} >Submit</button>
