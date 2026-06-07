@@ -1,0 +1,12 @@
+.head{
+  color: red;
+  background-color: aqua;
+  border: 2px solid black;
+}
+
+.main{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
