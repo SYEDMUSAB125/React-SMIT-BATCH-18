@@ -5,14 +5,15 @@ import OwnTopic from "./pages/OwnTopic"
 import ConditionalRendering3 from "./pages/ConditionalRendering3"
 import FunctionProps from "./pages/FunctionProps"
 import  FormReact  from "./pages/FormReact"
+import FormReact2 from "./pages/FormReact2"
 const App = ()=>{
   
 const [name , setName] =useState("Syed Musab")
   
   return(
     <>
-      <h1>Hello react is starting</h1>
-    < FormReact />
+ 
+   < FormReact2 />
    
     </>
   )
