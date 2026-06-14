@@ -34,9 +34,11 @@ function FormReact2() {
                 icon: "success"
             })
             const storeValue  = JSON.stringify(formData)
+            // "{}"
             localStorage.setItem("userData",storeValue )
            const getVlaue =  localStorage.getItem("userData")
          const parseValue =   JSON.parse(getVlaue)
+        //  "{}" = > {}
          setData(parseValue)
         }
 
