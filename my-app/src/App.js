@@ -10,13 +10,14 @@ import LifeCycleInReact from "./pages/LifeCycleInReact";
 import LearnMemo from "./pages/LearnMemo";
 import RevisionHook1 from "./pages/RevisionHook1";
 import LearnCallback from "./pages/LearnCallback";
+import LearnMap from "./pages/LearnMap";
 const App = () => {
 
 
 
   return (
     <>
-    < LearnCallback />
+    < LearnMap />
      
     </>
   );
