@@ -1,0 +1,723 @@
+Complete Folder Structure
+text
+src/
+├── App.js
+├── App.module.css
+├── components/
+│   ├── WeatherCard.jsx
+│   ├── WeatherCard.module.css
+│   ├── SearchBar.jsx
+│   ├── SearchBar.module.css
+│   ├── LocationBtn.jsx
+│   └── LocationBtn.module.css
+└── index.js
+1. App.js
+jsx
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { AnimatePresence, motion } from 'framer-motion';
+import Swal from 'sweetalert2';
+import WeatherCard from './components/WeatherCard';
+import SearchBar from './components/SearchBar';
+import LocationBtn from './components/LocationBtn';
+import styles from './App.module.css';
+
+const API_KEY = '8d86be893d2f42a188d131751260905'; // Replace with your key
+const BASE_URL = 'https://api.weatherapi.com/v1';
+
+const App = () => {
+  const [weather, setWeather] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [unit, setUnit] = useState('C');
+  const [bgClass, setBgClass] = useState('default');
+
+  const fetchWeather = async (city) => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${BASE_URL}/current.json`, {
+        params: { key: API_KEY, q: city, aqi: 'yes' }
+      });
+      const data = res.data;
+      const weatherData = {
+        name: data.location.name,
+        country: data.location.country,
+        local_time: data.location.localtime,
+        temp: data.current.temp_c,
+        feels_like: data.current.feelslike_c,
+        humidity: data.current.humidity,
+        wind_speed: data.current.wind_kph,
+        uv: data.current.uv,
+        aqi: data.current.air_quality?.['us-epa-index'] || 'N/A',
+        condition: data.current.condition.text,
+        icon: data.current.condition.icon,
+        isDay: data.current.is_day === 1,
+      };
+      setWeather(weatherData);
+      setBgClass(getBgClass(weatherData.condition, weatherData.isDay));
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'City not found',
+        text: 'Please try again with a valid city name.',
+        background: '#1e293b',
+        color: '#f1f5f9',
+        confirmButtonColor: '#60a5fa',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchByLocation = () => {
+    if (!navigator.geolocation) {
+      Swal.fire('Error', 'Geolocation not supported', 'error');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setLoading(true);
+        try {
+          const res = await axios.get(`${BASE_URL}/current.json`, {
+            params: { key: API_KEY, q: `${latitude},${longitude}`, aqi: 'yes' }
+          });
+          const data = res.data;
+          const weatherData = {
+            name: data.location.name,
+            country: data.location.country,
+            local_time: data.location.localtime,
+            temp: data.current.temp_c,
+            feels_like: data.current.feelslike_c,
+            humidity: data.current.humidity,
+            wind_speed: data.current.wind_kph,
+            uv: data.current.uv,
+            aqi: data.current.air_quality?.['us-epa-index'] || 'N/A',
+            condition: data.current.condition.text,
+            icon: data.current.condition.icon,
+            isDay: data.current.is_day === 1,
+          };
+          setWeather(weatherData);
+          setBgClass(getBgClass(weatherData.condition, weatherData.isDay));
+        } catch (err) {
+          Swal.fire('Error', 'Could not fetch location weather', 'error');
+        } finally {
+          setLoading(false);
+        }
+      },
+      () => {
+        Swal.fire('Location denied', 'Please allow location access', 'warning');
+      }
+    );
+  };
+
+  const getBgClass = (condition, isDay) => {
+    const cond = condition.toLowerCase();
+    if (cond.includes('sunny') || cond.includes('clear')) return isDay ? 'sunny' : 'night';
+    if (cond.includes('cloud')) return 'cloudy';
+    if (cond.includes('rain') || cond.includes('drizzle')) return 'rainy';
+    if (cond.includes('snow')) return 'snowy';
+    if (cond.includes('fog') || cond.includes('mist')) return 'foggy';
+    return 'default';
+  };
+
+  useEffect(() => {
+    fetchWeather('London');
+  }, []);
+
+  return (
+    <div className={`${styles.app} ${styles[bgClass]}`}>
+      <div className={styles.container}>
+        <div className={styles.topBar}>
+          <SearchBar onSearch={fetchWeather} loading={loading} />
+          <LocationBtn onLocation={fetchByLocation} loading={loading} />
+        </div>
+
+        <AnimatePresence mode="wait">
+          {loading ? (
+            <motion.div 
+              className={styles.loaderWrapper}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <div className={styles.spinner}></div>
+            </motion.div>
+          ) : (
+            weather && <WeatherCard weather={weather} unit={unit} setUnit={setUnit} />
+          )}
+        </AnimatePresence>
+
+        <footer className={styles.footer}>
+          <p>Weather data by WeatherAPI.com</p>
+        </footer>
+      </div>
+    </div>
+  );
+};
+
+export default App;
+2. App.module.css
+css
+.app {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  transition: background 0.8s ease;
+  border-radius: 2rem;
+  background: linear-gradient(145deg, #0f172a, #1e293b);
+}
+
+.container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.topBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 2rem;
+  justify-content: center;
+}
+
+.loaderWrapper {
+  display: flex;
+  justify-content: center;
+  padding: 4rem 0;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(255, 255, 255, 0.1);
+  border-top: 5px solid #60a5fa;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.footer {
+  margin-top: 2.5rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.85rem;
+  letter-spacing: 0.3px;
+}
+
+/* Dynamic Backgrounds */
+.sunny {
+  background: linear-gradient(145deg, #1e3a5f, #0f172a);
+}
+.night {
+  background: linear-gradient(145deg, #0b1120, #1a1a2e);
+}
+.cloudy {
+  background: linear-gradient(145deg, #334155, #0f172a);
+}
+.rainy {
+  background: linear-gradient(145deg, #1e293b, #0f172a);
+}
+.snowy {
+  background: linear-gradient(145deg, #2d3a4a, #1e293b);
+}
+.foggy {
+  background: linear-gradient(145deg, #2d3748, #1a202c);
+}
+.default {
+  background: linear-gradient(145deg, #0f172a, #1e293b);
+}
+
+@media (max-width: 600px) {
+  .topBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+3. components/WeatherCard.jsx
+jsx
+import React from 'react';
+import { motion } from 'framer-motion';
+import { 
+  WiThermometer, WiHumidity, WiStrongWind, WiDaySunny,
+  WiCelsius, WiFahrenheit
+} from 'react-icons/wi';
+import { FaMapMarkerAlt } from 'react-icons/fa';
+import { BsFillSunFill, BsFillMoonFill } from 'react-icons/bs';
+import styles from './WeatherCard.module.css';
+
+const WeatherCard = ({ weather, unit, setUnit }) => {
+  if (!weather) return null;
+
+  const { 
+    name, country, temp, feels_like, humidity, wind_speed, 
+    uv, aqi, local_time, condition, icon, isDay 
+  } = weather;
+
+  const tempDisplay = unit === 'C' ? temp : (temp * 9/5 + 32);
+  const feelsDisplay = unit === 'C' ? feels_like : (feels_like * 9/5 + 32);
+  const windDisplay = unit === 'C' ? wind_speed : (wind_speed * 0.621371);
+  const windUnit = unit === 'C' ? 'km/h' : 'mph';
+
+  return (
+    <motion.div 
+      className={styles.card}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className={styles.cardHeader}>
+        <div>
+          <h2 className={styles.cityName}>
+            <FaMapMarkerAlt className={styles.iconMap} />
+            {name}, {country}
+          </h2>
+          <p className={styles.localTime}>{local_time}</p>
+        </div>
+        <div className={styles.tempToggle}>
+          <button 
+            className={`${styles.tempBtn} ${unit === 'C' ? styles.active : ''}`}
+            onClick={() => setUnit('C')}
+          >
+            <WiCelsius />
+          </button>
+          <button 
+            className={`${styles.tempBtn} ${unit === 'F' ? styles.active : ''}`}
+            onClick={() => setUnit('F')}
+          >
+            <WiFahrenheit />
+          </button>
+        </div>
+      </div>
+
+      <div className={styles.weatherMain}>
+        <div className={styles.conditionIcon}>
+          {isDay ? <BsFillSunFill className={styles.sunIcon} /> : <BsFillMoonFill className={styles.moonIcon} />}
+          <img src={icon} alt={condition} className={styles.weatherIcon} />
+        </div>
+        <div className={styles.tempDisplay}>
+          <span className={styles.tempValue}>{Math.round(tempDisplay)}</span>
+          <span className={styles.tempUnit}>°{unit}</span>
+          <p className={styles.conditionText}>{condition}</p>
+        </div>
+      </div>
+
+      <div className={styles.detailsGrid}>
+        <div className={styles.detailItem}>
+          <WiThermometer className={styles.detailIcon} />
+          <span>Feels like <strong>{Math.round(feelsDisplay)}°{unit}</strong></span>
+        </div>
+        <div className={styles.detailItem}>
+          <WiHumidity className={styles.detailIcon} />
+          <span>Humidity <strong>{humidity}%</strong></span>
+        </div>
+        <div className={styles.detailItem}>
+          <WiStrongWind className={styles.detailIcon} />
+          <span>Wind <strong>{Math.round(windDisplay)} {windUnit}</strong></span>
+        </div>
+        <div className={styles.detailItem}>
+          <WiDaySunny className={styles.detailIcon} />
+          <span>UV Index <strong>{uv}</strong></span>
+        </div>
+        <div className={styles.detailItem}>
+          <i className="fas fa-leaf" style={{color: '#4ade80', marginRight: '6px'}}></i>
+          <span>AQI <strong>{aqi}</strong></span>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+export default WeatherCard;
+4. components/WeatherCard.module.css
+css
+.card {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(16px);
+  border-radius: 2.5rem;
+  padding: 2rem 2.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.cityName {
+  color: #f1f5f9;
+  font-size: 1.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.iconMap {
+  color: #60a5fa;
+  font-size: 1.4rem;
+}
+
+.localTime {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  margin-top: 2px;
+}
+
+.tempToggle {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px;
+  border-radius: 40px;
+}
+
+.tempBtn {
+  background: transparent;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 30px;
+  color: #94a3b8;
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition: all 0.25s;
+  display: flex;
+  align-items: center;
+}
+
+.tempBtn.active {
+  background: #60a5fa;
+  color: #0f172a;
+}
+
+.weatherMain {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin: 1.5rem 0 2rem 0;
+}
+
+.conditionIcon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sunIcon {
+  font-size: 2.2rem;
+  color: #fbbf24;
+}
+
+.moonIcon {
+  font-size: 2.2rem;
+  color: #e2e8f0;
+}
+
+.weatherIcon {
+  width: 70px;
+  height: 70px;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
+}
+
+.tempDisplay {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tempValue {
+  font-size: 4.2rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  line-height: 1;
+}
+
+.tempUnit {
+  font-size: 1.8rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.conditionText {
+  color: #cbd5e1;
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-left: 6px;
+  width: 100%;
+}
+
+.detailsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.detailItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #e2e8f0;
+  font-size: 0.95rem;
+}
+
+.detailIcon {
+  font-size: 1.6rem;
+  color: #60a5fa;
+}
+
+.detailItem strong {
+  color: #f1f5f9;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .card {
+    padding: 1.5rem;
+  }
+  .cityName {
+    font-size: 1.4rem;
+  }
+  .tempValue {
+    font-size: 3.2rem;
+  }
+  .weatherMain {
+    gap: 1rem;
+  }
+  .detailsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+5. components/SearchBar.jsx
+jsx
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import Swal from 'sweetalert2';
+import { FaSearch, FaSpinner } from 'react-icons/fa';
+import styles from './SearchBar.module.css';
+
+const SearchBar = ({ onSearch, loading }) => {
+  const [city, setCity] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (city.trim() === '') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Oops...',
+        text: 'Please enter a city name!',
+        background: '#1e293b',
+        color: '#f1f5f9',
+        confirmButtonColor: '#60a5fa',
+      });
+      return;
+    }
+    onSearch(city.trim());
+    setCity('');
+  };
+
+  return (
+    <motion.form 
+      className={styles.searchForm}
+      onSubmit={handleSubmit}
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <div className={styles.searchWrapper}>
+        <FaSearch className={styles.searchIcon} />
+        <input
+          type="text"
+          className={styles.searchInput}
+          placeholder="Search city..."
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+        />
+        <button type="submit" className={styles.searchBtn} disabled={loading}>
+          {loading ? <FaSpinner className={styles.spinner} /> : 'Search'}
+        </button>
+      </div>
+    </motion.form>
+  );
+};
+
+export default SearchBar;
+6. components/SearchBar.module.css
+css
+.searchForm {
+  flex: 1;
+  min-width: 220px;
+}
+
+.searchWrapper {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  border-radius: 60px;
+  padding: 0.2rem 0.2rem 0.2rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.3s;
+}
+
+.searchWrapper:focus-within {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.3);
+}
+
+.searchIcon {
+  color: #94a3b8;
+  font-size: 1rem;
+}
+
+.searchInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0.75rem 0.75rem;
+  color: #f1f5f9;
+  font-size: 1rem;
+  outline: none;
+  font-family: 'Inter', sans-serif;
+}
+
+.searchInput::placeholder {
+  color: #94a3b8;
+}
+
+.searchBtn {
+  background: #60a5fa;
+  border: none;
+  padding: 0.65rem 1.8rem;
+  border-radius: 60px;
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Inter', sans-serif;
+}
+
+.searchBtn:hover:not(:disabled) {
+  background: #3b82f6;
+  transform: scale(1.02);
+}
+
+.searchBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+7. components/LocationBtn.jsx
+jsx
+import React from 'react';
+import { motion } from 'framer-motion';
+import { FaMapMarkerAlt } from 'react-icons/fa';
+import styles from './LocationBtn.module.css';
+
+const LocationBtn = ({ onLocation, loading }) => {
+  return (
+    <motion.button
+      className={styles.locationBtn}
+      onClick={onLocation}
+      disabled={loading}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+    >
+      <FaMapMarkerAlt /> {loading ? 'Getting...' : 'Current Location'}
+    </motion.button>
+  );
+};
+
+export default LocationBtn;
+8. components/LocationBtn.module.css
+css
+.locationBtn {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0.65rem 1.5rem;
+  border-radius: 60px;
+  color: #f1f5f9;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+}
+
+.locationBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.02);
+}
+
+.locationBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+9. index.js (Entry Point)
+jsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+10. index.css (Global Styles)
+css
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: #0b1120;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+#root {
+  width: 100%;
+  max-width: 1100px;
+}
